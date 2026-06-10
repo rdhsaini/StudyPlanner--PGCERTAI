@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ridhi · PGCert AI Study Planner</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #07071a;
+    font-family: 'Segoe UI', -apple-system, sans-serif;
+    color: #e0e0f0;
+    min-height: 100vh;
+  }
+  .header {
+    background: linear-gradient(135deg, #0d0d2b 0%, #1a0a3e 60%, #0a1a2e 100%);
+    border-bottom: 1px solid #1e1e40;
+    padding: 28px 20px 20px;
+  }
+  .header-inner, .container { max-width: 860px; margin: 0 auto; }
+  .eyebrow { font-size: 10px; letter-spacing: 3px; color: #845EF7; text-transform: uppercase; margin-bottom: 6px; }
+  h1 { font-size: clamp(20px, 4vw, 28px); font-weight: 700; letter-spacing: -0.3px; margin-bottom: 4px; }
+  .subtitle { font-size: 12px; color: #7777aa; margin-bottom: 18px; }
+  .progress-row { display: flex; align-items: center; gap: 12px; }
+  .progress-track { flex: 1; background: #1a1a38; border-radius: 4px; height: 6px; }
+  .progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #845EF7, #00C9A7); transition: width 0.5s ease; width: 0%; }
+  .progress-label { font-size: 12px; color: #8888aa; white-space: nowrap; }
+  .container { padding: 0 20px 60px; }
+  .tabs { display: flex; gap: 2px; margin-top: 20px; border-bottom: 1px solid #1e1e40; }
+  .tab {
+    background: transparent; border: none; border-bottom: 2px solid transparent;
+    color: #5555aa; padding: 10px 16px; cursor: pointer; font-size: 13px; transition: all 0.2s;
+    font-family: inherit;
+  }
+  .tab.active { background: #13133a; border-bottom-color: #845EF7; color: #e0e0f0; }
+  .tab-content { padding: 24px 0; display: none; }
+  .tab-content.active { display: block; }
+
+  .week-card { background: #0e0e28; border: 1px solid #1e1e40; border-radius: 14px; margin-bottom: 10px; overflow: hidden; }
+  .week-card.travel { border-color: #FF8C4233; }
+  .week-card.current { border-color: var(--wc, #845EF7); }
+  .week-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; cursor: pointer; }
+  .week-left { display: flex; align-items: center; gap: 12px; }
+  .week-badge {
+    width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; flex-shrink: 0;
+  }
+  .week-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .week-dates { font-size: 11px; color: #5555aa; margin-top: 2px; }
+  .pill { font-size: 10px; padding: 2px 8px; border-radius: 20px; }
+  .week-right { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #5555aa; }
+  .week-body { border-top: 1px solid #1e1e4044; padding: 8px 0; display: none; }
+  .week-body.open { display: block; }
+  .week-goal { margin: 8px 20px 16px; padding: 10px 14px; border-radius: 8px; font-size: 12px; color: #aaaacc; line-height: 1.5; }
+  .goal-label { font-size: 10px; letter-spacing: 1px; margin-bottom: 4px; }
+  .travel-banner {
+    margin: 8px 20px 0; padding: 8px 14px; border-radius: 8px; background: #2A150033;
+    border: 1px solid #FF8C4244; font-size: 11px; color: #FF8C42;
+  }
+  .day-card { margin: 0 12px 8px; border-radius: 10px; background: #0c0c24; border: 1px solid #1a1a38; overflow: hidden; }
+  .day-card.today { border-color: #00C9A766; background: #00C9A70d; }
+  .day-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid #1a1a38; }
+  .day-name { font-size: 13px; font-weight: 600; color: #9999cc; display: flex; align-items: center; gap: 8px; }
+  .today-tag { font-size: 10px; background: #00C9A7; color: #07071a; padding: 2px 7px; border-radius: 10px; font-weight: 700; }
+  .loc { font-size: 10px; color: #5555aa; }
+  .day-count { font-size: 11px; color: #4444aa; }
+  .day-count.done { color: #00C9A7; }
+  .task { display: flex; align-items: flex-start; gap: 10px; padding: 8px 14px; cursor: pointer; }
+  .task:hover { background: #ffffff06; }
+  .checkbox {
+    width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; margin-top: 2px;
+    border: 1.5px solid #2a2a50; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #07071a; font-weight: 800; transition: all 0.15s;
+  }
+  .task.done .checkbox { background: var(--wc, #00C9A7); border-color: var(--wc, #00C9A7); }
+  .task-text { font-size: 13px; line-height: 1.45; color: #c0c0e0; }
+  .task.done .task-text { color: #3a3a6a; text-decoration: line-through; }
+
+  .resource {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #0e0e28; border: 1px solid #1e1e40; border-radius: 10px;
+    padding: 14px 18px; margin-bottom: 8px; text-decoration: none; transition: border-color 0.2s;
+  }
+  .resource:hover { border-color: #845EF7; }
+  .resource-name { font-size: 13px; color: #c0c0e0; }
+  .resource-right { display: flex; align-items: center; gap: 10px; }
+  .tag { font-size: 10px; color: #845EF7; background: #845EF720; border: 1px solid #845EF740; padding: 3px 8px; border-radius: 20px; }
+  .arrow { color: #3a3a6a; }
+
+  .section-label { font-size: 11px; color: #5555aa; letter-spacing: 1px; margin-bottom: 18px; }
+  .notes-hint { font-size: 12px; color: #4444aa; margin-bottom: 12px; line-height: 1.6; }
+  textarea {
+    width: 100%; min-height: 420px; background: #0e0e28; border: 1px solid #1e1e40;
+    border-radius: 12px; color: #c0c0e0; font-family: inherit; font-size: 13px;
+    line-height: 1.7; padding: 18px; resize: vertical; outline: none;
+  }
+  textarea:focus { border-color: #845EF755; }
+  .autosave { font-size: 11px; color: #3a3a6a; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="eyebrow">Ridhi Saini · PGCertAI Mission Control</div>
+    <h1>UoA PGCert AI — Study Planner</h1>
+    <div class="subtitle">9 June → 14 July 2026 · Course begins 15 July · ✈️ LHR travel 14–24 June factored in</div>
+    <div class="progress-row">
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel">0/0 tasks · 0%</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" data-tab="plan">📅 Daily Plan</button>
+    <button class="tab" data-tab="resources">🔗 Resources</button>
+    <button class="tab" data-tab="notes">📝 My Notes</button>
+  </div>
+
+  <div class="tab-content active" id="tab-plan"></div>
+
+  <div class="tab-content" id="tab-resources">
+    <div class="section-label">YOUR ESSENTIAL STUDY LINKS</div>
+    <div id="resourceList"></div>
+  </div>
+
+  <div class="tab-content" id="tab-notes">
+    <div class="section-label">YOUR DAILY STUDY JOURNAL — REPORT IN EVERY SESSION</div>
+    <div class="notes-hint">Log what clicked, what didn't, and questions to bring to Claude. Then paste your update into your Claude chat to keep the streak going.</div>
+    <textarea id="notesArea" placeholder="9 June — Day 1&#10;Done: Kaggle Lesson 1. Variables make sense. Functions still fuzzy.&#10;Question for Claude: what's the difference between a list and a dictionary?&#10;&#10;10 June — Day 2&#10;..."></textarea>
+    <div class="autosave">Auto-saves in your browser</div>
+  </div>
+</div>
+
+<script>
+const WEEKS = [
+  {
+    id: 1, label: "W1", dates: "9–13 June", theme: "Python Foundations", color: "#00C9A7", travel: false,
+    goal: "Read Python confidently. Understand what vibe-coded scripts are actually doing.",
+    days: [
+      { date: "2026-06-09", day: "Mon 9 Jun", loc: "Dubai 🏠", tasks: [
+        "Kaggle Python: Lesson 1 — Syntax & Variables (30 min)",
+        "Ask Claude: explain the last thing you vibe-coded line by line (20 min)"]},
+      { date: "2026-06-10", day: "Tue 10 Jun", loc: "Dubai 🏠", tasks: [
+        "Kaggle Python: Lesson 2 — Functions (30 min)",
+        "Write a function that adds two numbers. Run it. (20 min)"]},
+      { date: "2026-06-11", day: "Wed 11 Jun", loc: "Dubai 🏠", tasks: [
+        "Kaggle Python: Lesson 3 — Booleans & Conditionals (30 min)",
+        "Write a simple if/else in Python. Test it. (20 min)"]},
+      { date: "2026-06-12", day: "Thu 12 Jun", loc: "Dubai 🏠", tasks: [
+        "Kaggle Python: Lesson 4 — Lists (30 min)",
+        "Kaggle Python: Lesson 5 — Loops & Strings (30 min)"]},
+      { date: "2026-06-13", day: "Fri 13 Jun", loc: "Dubai 🏠", tasks: [
+        "Kaggle Python: Lesson 6 — Dictionaries (30 min)",
+        "Week 1 reflection: write 5 things you now understand about Python (15 min)",
+        "Report back to Claude ✅"]},
+    ]
+  },
+  {
+    id: 2, label: "W2", dates: "14–24 June", theme: "Travel Week — Light Touch (LHR)", color: "#FF8C42", travel: true,
+    goal: "Maintain momentum with 30 min/day only. No new coding. Reading and concept videos only — all phone-friendly.",
+    days: [
+      { date: "2026-06-14", day: "Sat 14 Jun", loc: "✈️ Travel", tasks: ["Travel day — rest. Optional: 3Blue1Brown Linear Algebra Ep 1 on the plane (15 min)"]},
+      { date: "2026-06-15", day: "Sun 15 Jun", loc: "LHR 🇬🇧", tasks: ["Andrew Ng: AI for Everyone — Week 1 (30 min, phone friendly)"]},
+      { date: "2026-06-16", day: "Mon 16 Jun", loc: "LHR 🇬🇧", tasks: ["Andrew Ng: AI for Everyone — Week 2 (30 min)"]},
+      { date: "2026-06-17", day: "Tue 17 Jun", loc: "LHR 🇬🇧", tasks: ["Andrew Ng: AI for Everyone — Week 3 (30 min)"]},
+      { date: "2026-06-18", day: "Wed 18 Jun", loc: "LHR 🇬🇧", tasks: ["Andrew Ng: AI for Everyone — Week 4 (30 min)"]},
+      { date: "2026-06-19", day: "Thu 19 Jun", loc: "LHR 🇬🇧", tasks: ["Khan Academy: Mean, Median, Mode + Basic Probability (30 min)"]},
+      { date: "2026-06-20", day: "Fri 20 Jun", loc: "LHR 🇬🇧", tasks: ["Khan Academy: Normal Distribution (20 min) — if tired, skip. Rest is fine."]},
+      { date: "2026-06-21", day: "Sat 21 Jun", loc: "LHR 🇬🇧", tasks: ["3Blue1Brown: Essence of Linear Algebra Ep 1 & 2 (30 min)"]},
+      { date: "2026-06-22", day: "Sun 22 Jun", loc: "LHR 🇬🇧", tasks: ["3Blue1Brown: Linear Algebra Ep 3 & 4 (30 min)"]},
+      { date: "2026-06-23", day: "Mon 23 Jun", loc: "LHR 🇬🇧", tasks: ["Read UoA COMPSCI 713 course outline on your phone (30 min) — just read, no pressure"]},
+      { date: "2026-06-24", day: "Tue 24 Jun", loc: "✈️ Return", tasks: ["Travel day — rest. You've earned it. Optional: review your notes from the trip."]},
+    ]
+  },
+  {
+    id: 3, label: "W3", dates: "25–29 June", theme: "Python for Data & ML", color: "#FF6B6B", travel: false,
+    goal: "Rebuild momentum. Run real ML code. Read it, modify it, understand it.",
+    days: [
+      { date: "2026-06-25", day: "Wed 25 Jun", loc: "Dubai 🏠", tasks: [
+        "Install VS Code + Python on your Mac if not done (30 min)",
+        "Install Jupyter — run first cell: print('Hello dnata') (20 min)"]},
+      { date: "2026-06-26", day: "Thu 26 Jun", loc: "Dubai 🏠", tasks: [
+        "Kaggle: Intro to Machine Learning — Lesson 1 & 2 (45 min)",
+        "Note what the code is doing in plain English after each lesson"]},
+      { date: "2026-06-27", day: "Fri 27 Jun", loc: "Dubai 🏠", tasks: [
+        "Kaggle: Intro to ML — Lesson 3 & 4 (45 min)",
+        "Ask Claude: explain a decision tree using cargo weight data"]},
+      { date: "2026-06-28", day: "Sat 28 Jun", loc: "Dubai 🏠", tasks: [
+        "Kaggle: Intro to ML — Lesson 5 & 6 (45 min)",
+        "Vibe code a basic ML model — then read every line and annotate it"]},
+      { date: "2026-06-29", day: "Sun 29 Jun", loc: "Dubai 🏠", tasks: [
+        "Kaggle: Intro to ML — Lesson 7 final (30 min)",
+        "Run a complete notebook start to finish without help (30 min)",
+        "Week 3 reflection: what still feels like a black box? Report to Claude ✅"]},
+    ]
+  },
+  {
+    id: 4, label: "W4", dates: "30 Jun – 6 Jul", theme: "Written Practice & Assignment Mindset", color: "#4DABF7", travel: false,
+    goal: "Shift from learner to student. Write AI explanations under timed conditions.",
+    days: [
+      { date: "2026-06-30", day: "Mon 30 Jun", loc: "Dubai 🏠", tasks: [
+        "Maths catch-up: Khan Academy Normal Distribution + Gradient concept (45 min)",
+        "Ask Claude to quiz you on any maths concept that felt unclear"]},
+      { date: "2026-07-01", day: "Tue 1 Jul", loc: "Dubai 🏠", tasks: [
+        "Write 200 words: What is a Neural Network? Timed 15 min — no notes.",
+        "Ask Claude to mark it and give feedback"]},
+      { date: "2026-07-02", day: "Wed 2 Jul", loc: "Dubai 🏠", tasks: [
+        "Write 200 words: How does Machine Learning work? Timed 15 min.",
+        "Ask Claude to mark it"]},
+      { date: "2026-07-03", day: "Thu 3 Jul", loc: "Dubai 🏠", tasks: [
+        "Write 200 words: AI vs ML vs Deep Learning — differences explained. Timed.",
+        "Read UoA COMPSCI 713 assessment guide — note what's required"]},
+      { date: "2026-07-04", day: "Fri 4 Jul", loc: "Dubai 🏠", tasks: [
+        "Set up UoA Canvas — explore the course shell before it goes live",
+        "Check Auckland library access — download any pre-reading listed"]},
+      { date: "2026-07-05", day: "Sat 5 Jul", loc: "Dubai 🏠", tasks: [
+        "Mock written response: 300 words on any AI concept for a non-tech colleague",
+        "Apply it to a dnata Cargo use case for extra depth"]},
+      { date: "2026-07-06", day: "Sun 6 Jul", loc: "Dubai 🏠", tasks: [
+        "Week 4 reflection — most confident in? Most nervous about? (15 min)",
+        "Report back to Claude ✅"]},
+    ]
+  },
+  {
+    id: 5, label: "W5", dates: "7–11 July", theme: "Final Revision & Polish", color: "#845EF7", travel: false,
+    goal: "Fix weak spots. Full concept quiz. Everything set up and ready.",
+    days: [
+      { date: "2026-07-07", day: "Mon 7 Jul", loc: "Dubai 🏠", tasks: [
+        "Revisit biggest weak spot from all weeks (45 min)",
+        "Ask Claude to explain it a completely different way"]},
+      { date: "2026-07-08", day: "Tue 8 Jul", loc: "Dubai 🏠", tasks: [
+        "Python: write 3 small scripts from scratch without help. Check them. (45 min)"]},
+      { date: "2026-07-09", day: "Wed 9 Jul", loc: "Dubai 🏠", tasks: [
+        "Read any pre-course material released on Canvas (45 min)",
+        "Note key terms you don't recognise — look them up"]},
+      { date: "2026-07-10", day: "Thu 10 Jul", loc: "Dubai 🏠", tasks: [
+        "Full concept quiz with Claude — test across all prep weeks (30 min)",
+        "Write a personal study plan for Semester 1"]},
+      { date: "2026-07-11", day: "Fri 11 Jul", loc: "Dubai 🏠", tasks: [
+        "Light revision only — 30 min max.",
+        "Confirm tech setup: VS Code, Python, Jupyter, Auckland VPN if needed"]},
+    ]
+  },
+  {
+    id: 6, label: "W6", dates: "12–14 July", theme: "Course Eve — You're Ready", color: "#20C997", travel: false,
+    goal: "Rest, light prep, walk into 15 July feeling calm and ready.",
+    days: [
+      { date: "2026-07-12", day: "Sat 12 Jul", loc: "Dubai 🏠", tasks: [
+        "Rest day — optional light reading only",
+        "Review your Daily Log: look at how far you've come 🎉"]},
+      { date: "2026-07-13", day: "Sun 13 Jul", loc: "Dubai 🏠", tasks: [
+        "Final reflection: write what you're walking into 15 July with (15 min)",
+        "Report back to Claude — final check-in before course begins ✅"]},
+      { date: "2026-07-14", day: "Mon 14 Jul", loc: "Dubai 🏠", tasks: [
+        "Eve of course: read Week 1 lecture topics if released on Canvas",
+        "Prep your study space. Sleep early. You're ready. 🎓"]},
+    ]
+  },
+];
+
+const RESOURCES = [
+  { name: "Kaggle Python Course", url: "https://www.kaggle.com/learn/python", tag: "Python" },
+  { name: "Kaggle Intro to Machine Learning", url: "https://www.kaggle.com/learn/intro-to-machine-learning", tag: "ML" },
+  { name: "Andrew Ng: AI for Everyone", url: "https://www.coursera.org/learn/ai-for-everyone", tag: "AI Concepts" },
+  { name: "3Blue1Brown: Essence of Linear Algebra", url: "https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab", tag: "Maths" },
+  { name: "3Blue1Brown: But what is a neural network?", url: "https://www.youtube.com/watch?v=aircAruvnKk", tag: "AI Concepts" },
+  { name: "Khan Academy: Statistics & Probability", url: "https://www.khanacademy.org/math/statistics-probability", tag: "Maths" },
+  { name: "UoA COMPSCI 713 Course Outline", url: "https://courseoutline.auckland.ac.nz/dco/course/COMPSCI/713", tag: "Course" },
+  { name: "UoA Canvas", url: "https://canvas.auckland.ac.nz", tag: "Course" },
+  { name: "VS Code Download", url: "https://code.visualstudio.com/", tag: "Tools" },
+];
+
+// ── state ──────────────────────────────────────────
+let completed = {};
+try { completed = JSON.parse(localStorage.getItem("ridhi_tasks_v2") || "{}"); } catch(e) {}
+
+function save() {
+  try { localStorage.setItem("ridhi_tasks_v2", JSON.stringify(completed)); } catch(e) {}
+}
+
+function todayStr() {
+  // Dubai timezone (UTC+4)
+  const now = new Date(Date.now() + 4 * 3600 * 1000);
+  return now.toISOString().slice(0, 10);
+}
+
+// ── render ─────────────────────────────────────────
+function render() {
+  const container = document.getElementById("tab-plan");
+  const today = todayStr();
+  let html = "";
+
+  WEEKS.forEach(week => {
+    const ids = week.days.flatMap(d => d.tasks.map((t,i) => d.date + "-" + i));
+    const done = ids.filter(id => completed[id]).length;
+    const isCurrent = week.days.some(d => d.date === today);
+    const open = isCurrent || (window._openWeek === week.id);
+
+    html += `<div class="week-card ${week.travel ? 'travel' : ''} ${isCurrent ? 'current' : ''}" style="--wc:${week.color}">
+      <div class="week-header" onclick="toggleWeek(${week.id})">
+        <div class="week-left">
+          <div class="week-badge" style="background:${week.color}20;border:1px solid ${week.color}44;color:${week.color}">${week.label}</div>
+          <div>
+            <div class="week-title">${week.theme}
+              ${isCurrent ? `<span class="pill" style="background:${week.color}30;color:${week.color};border:1px solid ${week.color}50">THIS WEEK</span>` : ''}
+              ${week.travel ? `<span class="pill" style="background:#FF8C4220;color:#FF8C42;border:1px solid #FF8C4240">✈️ 30 MIN/DAY</span>` : ''}
+            </div>
+            <div class="week-dates">${week.dates}</div>
+          </div>
+        </div>
+        <div class="week-right">
+          <span style="color:${done === ids.length ? '#00C9A7' : '#5555aa'}">${done}/${ids.length}</span>
+          <span>${open ? '▲' : '▼'}</span>
+        </div>
+      </div>
+      <div class="week-body ${open ? 'open' : ''}" id="week-body-${week.id}">
+        ${week.travel ? `<div class="travel-banner">✈️ TRAVEL MODE — phone-friendly tasks only, 30 min max. Skipping a tired day is fine.</div>` : ''}
+        <div class="week-goal" style="background:${week.color}10;border-left:3px solid ${week.color}">
+          <div class="goal-label" style="color:${week.color}">WEEK GOAL</div>${week.goal}
+        </div>`;
+
+    week.days.forEach(day => {
+      const dayIds = day.tasks.map((t,i) => day.date + "-" + i);
+      const dayDone = dayIds.filter(id => completed[id]).length;
+      const isToday = day.date === today;
+
+      html += `<div class="day-card ${isToday ? 'today' : ''}">
+        <div class="day-header">
+          <div class="day-name" style="${isToday ? 'color:' + week.color : ''}">
+            ${day.day}
+            ${isToday ? '<span class="today-tag">TODAY</span>' : ''}
+            <span class="loc">${day.loc}</span>
+          </div>
+          <span class="day-count ${dayDone === dayIds.length && dayIds.length ? 'done' : ''}">${dayDone}/${dayIds.length}</span>
+        </div>`;
+
+      day.tasks.forEach((task, i) => {
+        const id = day.date + "-" + i;
+        const isDone = !!completed[id];
+        html += `<div class="task ${isDone ? 'done' : ''}" onclick="toggleTask('${id}')" style="--wc:${week.color}">
+          <div class="checkbox">${isDone ? '✓' : ''}</div>
+          <div class="task-text">${task}</div>
+        </div>`;
+      });
+
+      html += `</div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  container.innerHTML = html;
+
+  // progress
+  const allIds = WEEKS.flatMap(w => w.days.flatMap(d => d.tasks.map((t,i) => d.date + "-" + i)));
+  const doneCount = allIds.filter(id => completed[id]).length;
+  const pct = Math.round((doneCount / allIds.length) * 100);
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressLabel").textContent = `${doneCount}/${allIds.length} tasks · ${pct}%`;
+}
+
+function toggleTask(id) {
+  completed[id] = !completed[id];
+  save();
+  render();
+}
+
+function toggleWeek(id) {
+  window._openWeek = (window._openWeek === id) ? null : id;
+  render();
+}
+
+// resources
+document.getElementById("resourceList").innerHTML = RESOURCES.map(r =>
+  `<a class="resource" href="${r.url}" target="_blank" rel="noreferrer">
+    <span class="resource-name">${r.name}</span>
+    <span class="resource-right"><span class="tag">${r.tag}</span><span class="arrow">↗</span></span>
+  </a>`
+).join("");
+
+// notes
+const notesArea = document.getElementById("notesArea");
+try { notesArea.value = localStorage.getItem("ridhi_notes_v2") || ""; } catch(e) {}
+notesArea.addEventListener("input", () => {
+  try { localStorage.setItem("ridhi_notes_v2", notesArea.value); } catch(e) {}
+});
+
+// tabs
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById("tab-" + tab.dataset.tab).classList.add("active");
+  });
+});
+
+render();
+</script>
+</body>
+</html>
